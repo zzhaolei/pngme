@@ -4,13 +4,21 @@ use std::{fmt::Display, io::Read, str::FromStr};
 use crate::Error;
 
 #[derive(PartialEq, Eq, Debug)]
-struct ChunkType {
+pub struct ChunkType {
     chunk: [u8; 4],
 }
 
 impl ChunkType {
-    fn bytes(&self) -> [u8; 4] {
+    pub fn bytes(&self) -> [u8; 4] {
         self.chunk
+    }
+
+    fn check_valid(chunks: &[u8]) -> bool {
+        chunks
+            .iter()
+            .filter(|i| (65..=90u8).contains(i) || (97..=122u8).contains(i))
+            .count()
+            == 4
     }
 
     /// Reference:
@@ -49,14 +57,6 @@ impl ChunkType {
         self.chunk[3] >> 5 & 1 == 1
     }
 
-    fn check_valid(chunks: &[u8]) -> bool {
-        chunks
-            .iter()
-            .filter(|i| (65..=90u8).contains(i) || (97..=122u8).contains(i))
-            .count()
-            == 4
-    }
-
     fn is_valid(&self) -> bool {
         self.is_reserved_bit_valid() && Self::check_valid(&self.chunk)
     }
@@ -65,6 +65,9 @@ impl ChunkType {
 impl TryFrom<[u8; 4]> for ChunkType {
     type Error = Error;
     fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
+        if !Self::check_valid(&value) {
+            return Err(Error::from("incorrect chunk type"));
+        }
         Ok(ChunkType { chunk: value })
     }
 }
@@ -79,10 +82,7 @@ impl FromStr for ChunkType {
         if size != 4 {
             return Err(Error::from("len not equal 4"));
         }
-        if !ChunkType::check_valid(&chunk) {
-            return Err(Error::from("not"));
-        }
-        Ok(ChunkType { chunk })
+        ChunkType::try_from(chunk)
     }
 }
 
