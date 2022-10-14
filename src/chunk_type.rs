@@ -1,7 +1,7 @@
 #![allow(unused)]
 use std::{fmt::Display, io::Read, str::FromStr};
 
-use crate::Error;
+use crate::{Error, Result};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct ChunkType {
@@ -64,7 +64,7 @@ impl ChunkType {
 
 impl TryFrom<[u8; 4]> for ChunkType {
     type Error = Error;
-    fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
+    fn try_from(value: [u8; 4]) -> Result<Self> {
         if !Self::check_valid(&value) {
             return Err(Error::from("incorrect chunk type"));
         }
@@ -75,7 +75,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
 impl FromStr for ChunkType {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let mut s = s.as_bytes();
         let mut chunk = [0; 4];
         let size = s.read(&mut chunk)?;

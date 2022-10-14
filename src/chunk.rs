@@ -4,7 +4,7 @@ use std::{fmt::Display, io::Read};
 
 use crc::{Crc, CRC_32_ISO_HDLC};
 
-use crate::{chunk_type::ChunkType, Error};
+use crate::{chunk_type::ChunkType, Error, Result};
 
 pub struct Chunk {
     chunk_type: ChunkType,
@@ -13,7 +13,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    fn new(chunk_type: ChunkType, data: Vec<u8>) -> Self {
+    pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Self {
         let crc = Self::checksum(
             &chunk_type
                 .bytes()
@@ -37,7 +37,7 @@ impl Chunk {
         &self.chunk_type
     }
 
-    fn data_as_string(&self) -> anyhow::Result<String, Error> {
+    fn data_as_string(&self) -> Result<String> {
         Ok(String::from_utf8(self.data.as_slice().to_vec())?)
     }
 
@@ -55,7 +55,7 @@ impl TryFrom<&[u8]> for Chunk {
     type Error = Error;
 
     /// &[u8] 包含数据 [长度、chunk_type、数据、crc]
-    fn try_from(mut value: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(mut value: &[u8]) -> Result<Self> {
         if value.len() < 4 {
             return Err(Error::from("incorrect chunk data"));
         }
