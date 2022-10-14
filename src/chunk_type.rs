@@ -3,7 +3,7 @@ use std::{fmt::Display, io::Read, str::FromStr};
 
 use crate::{Error, Result};
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct ChunkType {
     chunk: [u8; 4],
 }

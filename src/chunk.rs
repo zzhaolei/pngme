@@ -6,43 +6,54 @@ use crc::{Crc, CRC_32_ISO_HDLC};
 
 use crate::{chunk_type::ChunkType, Error, Result};
 
+#[derive(Debug, Clone)]
 pub struct Chunk {
     chunk_type: ChunkType,
     data: Vec<u8>,
-    crc: u32,
 }
 
 impl Chunk {
     pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Self {
-        let crc = Self::checksum(
-            &chunk_type
-                .bytes()
-                .iter()
-                .chain(data.iter())
-                .copied()
-                .collect::<Vec<u8>>(),
-        );
-        Chunk {
-            chunk_type,
-            data,
-            crc,
-        }
+        Chunk { chunk_type, data }
     }
 
-    fn length(&self) -> usize {
+    pub fn length(&self) -> usize {
         self.data.len()
     }
 
-    fn chunk_type(&self) -> &ChunkType {
+    pub fn chunk_length(&self) -> usize {
+        self.length() + 4 + 4 + 4
+    }
+
+    pub fn chunk_type(&self) -> &ChunkType {
         &self.chunk_type
     }
 
-    fn data_as_string(&self) -> Result<String> {
+    pub fn data_as_string(&self) -> Result<String> {
         Ok(String::from_utf8(self.data.as_slice().to_vec())?)
     }
 
     fn crc(&self) -> u32 {
-        self.crc
+        Self::checksum(
+            &self
+                .chunk_type
+                .bytes()
+                .iter()
+                .chain(self.data.iter())
+                .copied()
+                .collect::<Vec<u8>>(),
+        )
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        (self.length() as u32)
+            .to_be_bytes()
+            .iter()
+            .chain(self.chunk_type.bytes().iter())
+            .chain(self.data.iter())
+            .chain(self.crc().to_be_bytes().iter())
+            .copied()
+            .collect()
     }
 
     fn checksum(bytes: &[u8]) -> u32 {
@@ -61,10 +72,9 @@ impl TryFrom<&[u8]> for Chunk {
         }
 
         // 将 length 从 value 中分割出来
-        let mut length = [0; 4];
-        let _ = value.read(&mut length)?;
-        let length = u32::from_be_bytes(length) as usize;
-        let crc = Chunk::checksum(&value[..value.len() - 4]);
+        let mut length_array = [0; 4];
+        let _ = value.read(&mut length_array)?;
+        let length = u32::from_be_bytes(length_array) as usize;
 
         // 判断 value 的数据长度是否符合规范
         // chunk_type + data + crc
@@ -78,33 +88,33 @@ impl TryFrom<&[u8]> for Chunk {
         let chunk_type = ChunkType::try_from(chunk)?;
 
         // 将 data 从 value 中分割出来
-        let data = value[..length].to_vec();
-        value = &value[length..];
+        let mut data = vec![0; length];
+        let _ = value.read(&mut data);
 
         // 将 crc 从 value 中分割出来
-        let mut raw_crc = [0; 4];
-        let _ = value.read(&mut raw_crc)?;
-        let raw_crc = u32::from_be_bytes(raw_crc);
+        let mut raw_crc_array = [0; 4];
+        let _ = value.read(&mut raw_crc_array)?;
+        let raw_crc = u32::from_be_bytes(raw_crc_array);
+
+        let a: Vec<u8> = chunk.iter().chain(data.iter()).copied().collect();
+        let crc = Chunk::checksum(&a);
         if crc != raw_crc {
             return Err(Error::from("error"));
         }
 
-        Ok(Chunk {
-            chunk_type,
-            data,
-            crc: raw_crc,
-        })
+        Ok(Chunk { chunk_type, data })
     }
 }
 
 impl Display for Chunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let data = match self.data_as_string() {
-            Ok(s) => s,
-            Err(err) => "".to_owned(),
-        };
-
-        write!(f, "{}", data)
+        write!(f, "Chunk {{")?;
+        write!(f, "    Length: {}", self.length())?;
+        write!(f, "    Type: {}", self.chunk_type())?;
+        write!(f, "    Data: {} bytes", self.data.len())?;
+        write!(f, "    Crc: {}", self.crc())?;
+        write!(f, "}}")?;
+        Ok(())
     }
 }
 
