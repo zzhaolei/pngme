@@ -56,7 +56,7 @@ impl Chunk {
             .collect()
     }
 
-    fn checksum(bytes: &[u8]) -> u32 {
+    pub fn checksum(bytes: &[u8]) -> u32 {
         let crc = Crc::<u32>::new(&CRC_32_ISO_HDLC);
         crc.checksum(bytes)
     }

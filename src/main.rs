@@ -1,3 +1,5 @@
+use clap::Parser;
+
 mod args;
 mod chunk;
 mod chunk_type;
@@ -8,5 +10,5 @@ pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = anyhow::Result<T, Error>;
 
 fn main() -> Result<()> {
-    todo!()
+    args::Args::parse().process()
 }

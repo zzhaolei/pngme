@@ -7,7 +7,7 @@ use crate::chunk::Chunk;
 use crate::{Error, Result};
 
 #[derive(Debug)]
-struct Png {
+pub struct Png {
     chunks: Vec<Chunk>,
 }
 
@@ -18,7 +18,7 @@ impl Png {
         Png { chunks }
     }
 
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         Self::STANDARD_HEADER
             .iter()
             .chain(
@@ -32,7 +32,7 @@ impl Png {
             .collect()
     }
 
-    fn chunk_by_type(&self, s: &str) -> Option<Chunk> {
+    pub fn chunk_by_type(&self, s: &str) -> Option<Chunk> {
         let s = s.as_bytes();
         for i in self.chunks.iter() {
             if i.chunk_type().bytes() == s {
@@ -46,11 +46,11 @@ impl Png {
         &self.chunks
     }
 
-    fn append_chunk(&mut self, chunk: Chunk) {
+    pub fn append_chunk(&mut self, chunk: Chunk) {
         self.chunks.push(chunk);
     }
 
-    fn remove_chunk(&mut self, s: &str) -> Option<Chunk> {
+    pub fn remove_chunk(&mut self, s: &str) -> Option<Chunk> {
         let s = s.as_bytes();
         let mut chunk = None;
         for i in self.chunks.iter() {
@@ -90,7 +90,7 @@ impl TryFrom<&[u8]> for Png {
             return Err(Error::from("icorrect header"));
         }
 
-        while value.len() != 0 {
+        while !value.is_empty() {
             let chunk = Chunk::try_from(value)?;
             value = &value[chunk.chunk_length()..];
             chunks.push(chunk);
@@ -103,7 +103,7 @@ impl TryFrom<&[u8]> for Png {
 impl Display for Png {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Png {{")?;
-        if self.chunks.len() == 0 {
+        if self.chunks.is_empty() {
             write!(f, "    chunks: []")?;
         } else {
             write!(f, "    chunks: [")?;
