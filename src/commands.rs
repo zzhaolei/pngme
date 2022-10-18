@@ -20,6 +20,7 @@ impl Commands {
                 args::Commands::Decode { path, chunk_type } => self.decode(path, chunk_type)?,
                 args::Commands::Remove { path, chunk_type } => self.remove(path, chunk_type)?,
                 args::Commands::Print { path } => self.print(path)?,
+                args::Commands::Check { path } => self.check(path)?,
             };
         }
         Ok(())
@@ -96,8 +97,28 @@ impl Commands {
     }
 
     fn print(&self, path: &PathBuf) -> Result<()> {
-        let png_data = self.png_from_file(path)?.as_bytes();
-        println!("{:?}", png_data);
+        let png = self.png_from_file(path)?;
+        for chunk in png.chunks() {
+            if let Ok(data) = chunk.data_as_string() {
+                if !data.is_empty() {
+                    println!("{}", chunk.chunk_type());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn check(&self, path: &PathBuf) -> Result<()> {
+        let png = self.png_from_file(path)?;
+        for chunk in png.chunks() {
+            if let Ok(data) = chunk.data_as_string() {
+                if !data.is_empty() {
+                    println!("include secret message");
+                    return Ok(());
+                }
+            }
+        }
+        println!("exculde secret message");
         Ok(())
     }
 }

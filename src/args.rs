@@ -50,6 +50,9 @@ pub enum Commands {
     Print {
         path: PathBuf,
     },
+    Check {
+        path: PathBuf,
+    },
 }
 
 impl Args {}
