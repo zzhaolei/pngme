@@ -1,4 +1,5 @@
 use clap::Parser;
+use commands::Commands;
 
 mod args;
 mod chunk;
@@ -10,5 +11,6 @@ pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = anyhow::Result<T, Error>;
 
 fn main() -> Result<()> {
-    args::Args::parse().process()
+    let commands = Commands;
+    commands.process(args::Args::parse())
 }
